@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ParallelComputing.Libraries
 {
-    static class MatrixAdd
+    public static class MatrixAdd
     {
         public static long SequentialSum(int[,] matrix)
         {
@@ -25,28 +26,92 @@ namespace ParallelComputing.Libraries
 
             return sum;
         }
-
         public static long ParallelSum(int[,] matrix, int numThreads)
         {
-            int rows = matrix.GetLength(0);
-            int cols = matrix.GetLength(1);
-            long sum = 0;
+            try
+            {
+                int rows = matrix.GetLength(0);
+                int cols = matrix.GetLength(1);
+                long sum = 0;
 
-            Parallel.For(0, rows, new ParallelOptions { MaxDegreeOfParallelism = numThreads },
-                () => 0L,
-                (i, loop, localSum) =>
+                Thread[] threads = new Thread[numThreads];
+                object lockObject = new object();
+
+                for (int t = 0; t < numThreads; t++)
                 {
-                    for (int j = 0; j < cols; j++)
+                    int threadIndex = t;
+                    threads[t] = new Thread(() =>
                     {
-                        localSum += matrix[i, j];
-                    }
-                    return localSum;
-                },
-                localSum => Interlocked.Add(ref sum, localSum)
-            );
+                        long localSum = 0;
+                        for (int i = threadIndex; i < rows; i += numThreads)
+                        {
+                            for (int j = 0; j < cols; j++)
+                            {
+                                localSum += matrix[i, j];
+                            }
+                        }
+                        lock (lockObject)
+                        {
+                            sum += localSum;
+                        }
+                    });
+                    threads[t].Start();
+                }
 
-            return sum;
+                foreach (Thread thread in threads)
+                {
+                    thread.Join();
+                }
+
+                return sum;
+            }
+            catch (Exception)
+            {
+                return -999999999;
+            }
         }
+
+
+        public static long ParallelSum2(int[,] matrix, int numThreads)
+        {
+            try
+            {
+                int rows = matrix.GetLength(0);
+                int cols = matrix.GetLength(1);
+                long sum = 0;
+
+                Task[] tasks = new Task[numThreads];
+
+                for (int t = 0; t < numThreads; t++)
+                {
+                    int threadIndex = t;
+                    tasks[t] = Task.Run(() =>
+                    {
+                        long localSum = 0;
+                        for (int i = threadIndex; i < rows; i += numThreads)
+                        {
+                            for (int j = 0; j < cols; j++)
+                            {
+                                localSum += matrix[i, j];
+                            }
+                        }
+                        Interlocked.Add(ref sum, localSum);
+                    });
+                }
+
+                Task.WaitAll(tasks);
+
+                return sum;
+
+            }
+            catch (Exception)
+            {
+                
+                return -999999999;
+            }
+            
+        }
+        
 
         public static int[,] GenerateRandomMatrix(int rows, int cols)
         {
