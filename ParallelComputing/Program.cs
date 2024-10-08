@@ -8,6 +8,7 @@ namespace ParallelComputing
 {
     internal class Program
     {
+
         
         static long parallAdd(long[,] mas, string method_count = "Sequential", int NumThread = 0)
         {
@@ -20,10 +21,10 @@ namespace ParallelComputing
                     sum = MatrixAdd.SequentialSum(mas);
                     break;
                 case "Task":
-                    sum = MatrixAdd.ParallelSumTask(mas, NumThread);
+                    sum = MatrixAdd.PyramidalSumTask(mas, NumThread);
                     break;
                 case "Thread":
-                    sum = MatrixAdd.ParallelSumThread(mas, NumThread);
+                    sum = MatrixAdd.PyramidalSumThread(mas, NumThread);
                     break;
                 default:
                     Console.WriteLine("Нету такого метода");
@@ -44,8 +45,8 @@ namespace ParallelComputing
 
     
             long sequentialTime = parallAdd(mas, "Sequential");
-            long taskTime = parallAdd(mas, "Task", 2);
-            long threadTime = parallAdd(mas, "Thread", 2);
+            long taskTime = parallAdd(mas, "Task", 6);
+            long threadTime = parallAdd(mas, "Thread", 6);
 
             SaveResultsToFile(sequentialTime, taskTime, threadTime, rows * cols);
         }
@@ -68,7 +69,7 @@ namespace ParallelComputing
             if (File.Exists("results.csv"))
                 File.Delete("results.csv");
 
-            for (int i = 1000; i <= 16000; i += 1000)
+            for (int i = 1000; i <= 16000; i += 500)
             {
                 lab2(i, i);
             }

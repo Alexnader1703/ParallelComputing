@@ -26,34 +26,35 @@ namespace ParallelComputing.Libraries
 
             return sum;
         }
-        public static long ParallelSumThread(long[,] matrix, int numThreads)
+        public static long PyramidalSumThread(long[,] matrix, int numThreads)
         {
             try
             {
                 int rows = matrix.GetLength(0);
                 int cols = matrix.GetLength(1);
-                long sum = 0;
+                int totalElements = rows * cols;
+                int elementsPerThread = (totalElements + numThreads - 1) / numThreads;
 
+                long[] partialSums = new long[numThreads];
                 Thread[] threads = new Thread[numThreads];
-                object lockObject = new object();
 
                 for (int t = 0; t < numThreads; t++)
                 {
                     int threadIndex = t;
                     threads[t] = new Thread(() =>
                     {
+                        int start = threadIndex * elementsPerThread;
+                        int end = Math.Min(start + elementsPerThread, totalElements);
                         long localSum = 0;
-                        for (int i = threadIndex; i < rows; i += numThreads)
+
+                        for (int k = start; k < end; k++)
                         {
-                            for (int j = 0; j < cols; j++)
-                            {
-                                localSum += matrix[i, j];
-                            }
+                            int i = k / cols;
+                            int j = k % cols;
+                            localSum += matrix[i, j];
                         }
-                        lock (lockObject)
-                        {
-                            sum += localSum;
-                        }
+
+                        partialSums[threadIndex] = localSum;
                     });
                     threads[t].Start();
                 }
@@ -63,7 +64,22 @@ namespace ParallelComputing.Libraries
                     thread.Join();
                 }
 
-                return sum;
+                // Пирамидальное суммирование
+                while (numThreads > 1)
+                {
+                    int halfThreads = numThreads / 2;
+                    for (int i = 0; i < halfThreads; i++)
+                    {
+                        int j = i + halfThreads;
+                        if (j < numThreads)
+                        {
+                            partialSums[i] += partialSums[j];
+                        }
+                    }
+                    numThreads = halfThreads;
+                }
+
+                return partialSums[0];
             }
             catch (Exception)
             {
@@ -71,47 +87,71 @@ namespace ParallelComputing.Libraries
             }
         }
 
-
-        public static long ParallelSumTask(long[,] matrix, int numThreads)
+        public static long PyramidalSumTask(long[,] matrix, int numThreads)
         {
             try
             {
                 int rows = matrix.GetLength(0);
                 int cols = matrix.GetLength(1);
-                long sum = 0;
+                int totalElements = rows * cols;
+                int elementsPerTask = (totalElements + numThreads - 1) / numThreads;
 
+                long[] partialSums = new long[numThreads];
                 Task[] tasks = new Task[numThreads];
 
                 for (int t = 0; t < numThreads; t++)
                 {
-                    int threadIndex = t;
+                    int taskIndex = t;
                     tasks[t] = Task.Run(() =>
                     {
+                        int start = taskIndex * elementsPerTask;
+                        int end = Math.Min(start + elementsPerTask, totalElements);
                         long localSum = 0;
-                        for (int i = threadIndex; i < rows; i += numThreads)
+
+                        for (int k = start; k < end; k++)
                         {
-                            for (int j = 0; j < cols; j++)
-                            {
-                                localSum += matrix[i, j];
-                            }
+                            int i = k / cols;
+                            int j = k % cols;
+                            localSum += matrix[i, j];
                         }
-                        Interlocked.Add(ref sum, localSum);
+
+                        partialSums[taskIndex] = localSum;
                     });
                 }
 
                 Task.WaitAll(tasks);
 
-                return sum;
-
+                // Пирамидальное суммирование
+                return Task.Run(() =>
+                {
+                    int activeThreads = numThreads;
+                    while (activeThreads > 1)
+                    {
+                        int halfThreads = activeThreads / 2;
+                        Task[] sumTasks = new Task[halfThreads];
+                        for (int i = 0; i < halfThreads; i++)
+                        {
+                            int index = i;
+                            sumTasks[i] = Task.Run(() =>
+                            {
+                                int j = index + halfThreads;
+                                if (j < activeThreads)
+                                {
+                                    partialSums[index] += partialSums[j];
+                                }
+                            });
+                        }
+                        Task.WaitAll(sumTasks);
+                        activeThreads = halfThreads;
+                    }
+                    return partialSums[0];
+                }).Result;
             }
             catch (Exception)
             {
-                
                 return -999999999;
             }
-            
         }
-        
 
         public static long[,] GenerateRandomMatrix(int rows, int cols)
         {
