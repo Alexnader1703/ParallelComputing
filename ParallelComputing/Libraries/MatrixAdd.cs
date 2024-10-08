@@ -10,7 +10,7 @@ namespace ParallelComputing.Libraries
 {
     public static class MatrixAdd
     {
-        public static long SequentialSum(int[,] matrix)
+        public static long SequentialSum(long[,] matrix)
         {
             long sum = 0;
             int rows = matrix.GetLength(0);
@@ -26,7 +26,7 @@ namespace ParallelComputing.Libraries
 
             return sum;
         }
-        public static long ParallelSum(int[,] matrix, int numThreads)
+        public static long ParallelSumThread(long[,] matrix, int numThreads)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace ParallelComputing.Libraries
         }
 
 
-        public static long ParallelSum2(int[,] matrix, int numThreads)
+        public static long ParallelSumTask(long[,] matrix, int numThreads)
         {
             try
             {
@@ -113,10 +113,10 @@ namespace ParallelComputing.Libraries
         }
         
 
-        public static int[,] GenerateRandomMatrix(int rows, int cols)
+        public static long[,] GenerateRandomMatrix(int rows, int cols)
         {
             Random rand = new Random();
-            int[,] matrix = new int[rows, cols];
+            long[,] matrix = new long[rows, cols];
 
             for (int i = 0; i < rows; i++)
             {
@@ -129,7 +129,7 @@ namespace ParallelComputing.Libraries
             return matrix;
         }
 
-        public static void PrintMatrix(int[,] matrix)
+        public static void PrintMatrix(long[,] matrix)
         {
             int rows = matrix.GetLength(0);
             int cols = matrix.GetLength(1);

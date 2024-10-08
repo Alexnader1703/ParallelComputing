@@ -9,18 +9,31 @@ namespace ParallelComputing
 {
     internal class Program
     {
-        static void parallAdd(int[,]mas, int NumThread = 0)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="mas"></param>
+        /// <param name="method_count">Sequential, Task or Thread</param>
+        /// <param name="NumThread"></param>
+        static void parallAdd(long[,]mas, string method_count= "Sequential", int NumThread = 0)
         {
             Stopwatch stopwatch = new Stopwatch();
             long sum = 0;
             stopwatch.Start();
-            if (NumThread == 0)
+            switch (method_count)
             {
-                sum = MatrixAdd.SequentialSum(mas);
-            }
-            else
-            {
-                sum = MatrixAdd.ParallelSum(mas,NumThread);
+                case "Sequential":
+                    sum = MatrixAdd.SequentialSum(mas);
+                    break;
+                case "Task":
+                    sum = MatrixAdd.ParallelSumTask(mas, NumThread);
+                    break;
+                case "Thread":
+                    sum = MatrixAdd.ParallelSumThread(mas, NumThread);
+                    break;
+                default:
+                    Console.WriteLine("Нету такого метода");
+                    break;
 
             }
             stopwatch.Stop();
@@ -34,13 +47,15 @@ namespace ParallelComputing
 
         static void lab2(int rows, int cols)
         {
-            int[,] mas = MatrixAdd.GenerateRandomMatrix(rows, cols);
+            long[,] mas = MatrixAdd.GenerateRandomMatrix(rows, cols);
             Console.WriteLine($"Массив размером {rows * cols} [{rows}:{cols}] \n");
             parallAdd(mas);
-            parallAdd(mas,3);
-            parallAdd(mas,10);
+            parallAdd(mas, "Task",2);
+            parallAdd(mas, "Thread",2);
+           
 
         }
+        
         static void Main(string[] args)
         {
             lab2(10000, 10000);
