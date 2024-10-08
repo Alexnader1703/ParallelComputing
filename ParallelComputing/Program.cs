@@ -9,7 +9,7 @@ namespace ParallelComputing
     internal class Program
     {
 
-        
+       
         static long parallAdd(long[,] mas, string method_count = "Sequential", int NumThread = 0)
         {
             Stopwatch stopwatch = new Stopwatch();
